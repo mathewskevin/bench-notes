@@ -23,15 +23,25 @@
         textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
         textString = textString.Replace(" ", "_")
 
-        TakeScreenShot().Save("extra_images/" & fileNameData & "_" & textString & "_record" & ".bmp")
+        Dim fileName As String 'file name
+        Dim fileText As String 'richtextbox data
+        fileName = fileNameData & "_" & textString & "_record.bmp"
+
+        fileText = Trim(JournalRichTextBox.Text.Replace(vbLf, " "))
+        fileText = vbLf + fileName + " - " + fileText + vbLf
+
+        My.Computer.FileSystem.WriteAllText("log_journal.txt", fileText, True)
+
+        TakeScreenShot().Save("extra_images/" & fileName)
 
     End Sub
 
     Private Sub FormJournal_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.TopMost = True
 
-        Me.StartPosition = FormStartPosition.Manual
-        Me.Location = New Point(Form1.StartPosition, 0)
+        'Me.StartPosition = FormStartPosition.Manual
+        'Me.Location = New Point(Form1.Current)
+        'Me.Location = New Point(Form1.StartPosition, 0)
 
     End Sub
 

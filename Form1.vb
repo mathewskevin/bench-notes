@@ -37,22 +37,32 @@ Public Class Form1
         ' create log channels if not present
         If My.Computer.FileSystem.FileExists("log_channels.txt") = False Then
             Create_File("log_channels.txt")
+            My.Computer.FileSystem.WriteAllText("log_channels.txt", "C1 - " + vbLf + "C2 - ", False)
         End If
 
         ' create log notes if not present
         If My.Computer.FileSystem.FileExists("log_notes.txt") = False Then
             Create_File("log_notes.txt")
+            My.Computer.FileSystem.WriteAllText("log_notes.txt", "write notes here", False)
         End If
 
         ' create log factors if not present
         If My.Computer.FileSystem.FileExists("factorial_experiment.txt") = False Then
             Create_File("factorial_experiment.txt")
+            My.Computer.FileSystem.WriteAllText("factorial_experiment.txt", "title" + vbLf + "factor1: level1, level2, level3" + vbLf + "factor2: option1, option2", False)
+        End If
+
+        ' create log Journal if not present
+        If My.Computer.FileSystem.FileExists("log_journal.txt") = False Then
+            Create_File("log_journal.txt")
         End If
 
         ' create load data if not present
         If My.Computer.FileSystem.FileExists("log_settings.txt") = False Then
             Create_File("log_settings.txt")
-            My.Computer.FileSystem.WriteAllText("log_settings.txt", "500 300", False)
+            Dim compHeight As Integer = (My.Computer.Screen.Bounds.Height / 2) - (196 / 2)
+            Dim compWidth As Integer = (My.Computer.Screen.Bounds.Width / 2) - (532 / 2)
+            My.Computer.FileSystem.WriteAllText("log_settings.txt", "532 196" + vbLf + Trim(Str(compHeight)) + " " + Trim(Str(compWidth)), False)
         End If
 
         Return "None"
@@ -74,10 +84,18 @@ Public Class Form1
 
         Dim sizeArray As Array
         fileReader = My.Computer.FileSystem.ReadAllText("log_settings.txt")
-        sizeArray = fileReader.Split(" ", StringSplitOptions.TrimEntries)
+        sizeArray = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
 
-        Me.Width = Int(sizeArray(0))
-        Me.Height = Int(sizeArray(1))
+        Dim formSize As Array
+        Dim formPosition As Array
+        formSize = sizeArray(0).Split(" ", StringSplitOptions.TrimEntries)
+        formPosition = sizeArray(1).Split(" ", StringSplitOptions.TrimEntries)
+
+        Me.Width = Int(formSize(0))
+        Me.Height = Int(formSize(1))
+
+        Me.Top = formPosition(0)
+        Me.Left = formPosition(1)
 
     End Sub
 
@@ -91,7 +109,7 @@ Public Class Form1
         fileWriter = RichTextBox2.Text
         My.Computer.FileSystem.WriteAllText("log_channels.txt", fileWriter, False)
 
-        fileWriter = Trim(Str(Me.Width)) + " " + Trim(Str(Me.Height))
+        fileWriter = Trim(Str(Me.Width)) + " " + Trim(Str(Me.Height)) + vbLf + Trim(Str(Me.Top)) + " " + Trim(Str(Me.Left))
         My.Computer.FileSystem.WriteAllText("log_settings.txt", fileWriter, False)
 
     End Sub
@@ -125,15 +143,65 @@ Public Class Form1
     End Sub
 
     Private Sub lblClock_Click(sender As Object, e As EventArgs) Handles lblClock.Click
-        Process.Start("explorer.exe", "images")
+        Process.Start("explorer.exe", ".")
     End Sub
 
     Private Sub ButtonPopup_Click(sender As Object, e As EventArgs) Handles ButtonPopup.Click
+
+        Dim screenWidth As Integer
+        Dim screenHeight As Integer
+        screenWidth = My.Computer.Screen.Bounds.Width
+        screenHeight = My.Computer.Screen.Bounds.Height
+
+        Dim formLeft As Integer
+        Dim formTop As Integer
+        Dim popupHeight As Integer
+        formLeft = Me.Left
+        formTop = Me.Top
+        popupHeight = Form2.Height
+
+        If popupHeight > formTop Then
+            popupHeight = -1 * Me.Height
+        End If
+
+        Form2.StartPosition = FormStartPosition.Manual
+
+        AddHandler Form2.Load, Sub()
+                                   Form2.Location = New Point(Me.Left,
+                                                      Me.Top - popupHeight)
+                               End Sub
+
         Form2.Show()
+
     End Sub
 
     Private Sub ButtonJournal_Click(sender As Object, e As EventArgs) Handles ButtonJournal.Click
+
+        Dim screenWidth As Integer
+        Dim screenHeight As Integer
+        screenWidth = My.Computer.Screen.Bounds.Width
+        screenHeight = My.Computer.Screen.Bounds.Height
+
+        Dim formLeft As Integer
+        Dim formTop As Integer
+        Dim popupHeight As Integer
+        formLeft = Me.Left
+        formTop = Me.Top
+        popupHeight = FormJournal.Height
+
+        If popupHeight > formTop Then
+            popupHeight = -1 * Me.Height
+        End If
+
+        FormJournal.StartPosition = FormStartPosition.Manual
+
+        AddHandler FormJournal.Load, Sub()
+                                         FormJournal.Location = New Point(Me.Left,
+                                                      Me.Top - popupHeight)
+                                     End Sub
+
         FormJournal.Show()
+
     End Sub
 
     Private Sub ButtonOpacity_Click(sender As Object, e As EventArgs) Handles ButtonOpacity.Click
