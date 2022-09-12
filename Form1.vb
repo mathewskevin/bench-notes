@@ -2,13 +2,17 @@
 Imports System.Buffers
 Imports System.IO
 Imports System.Net.Mime.MediaTypeNames
+Imports System.Security.Cryptography.X509Certificates
 
 Public Class Form1
 
     Inherits System.Windows.Forms.Form
     'Inherits System.Drawing.Imaging
 
-    Dim OpacityVal As Double = 1.0
+    Public OpacityVal As Double = 1.0
+    Public bmpFileName As String
+    Public bmpFile As Bitmap
+    Public bmpJournal As String = ""
 
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         lblClock.Text = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")
@@ -29,11 +33,6 @@ Public Class Form1
             My.Computer.FileSystem.CreateDirectory("images")
         End If
 
-        ' create extra images if not present
-        If My.Computer.FileSystem.DirectoryExists("extra_images") = False Then
-            My.Computer.FileSystem.CreateDirectory("extra_images")
-        End If
-
         ' create log channels if not present
         If My.Computer.FileSystem.FileExists("log_channels.txt") = False Then
             Create_File("log_channels.txt")
@@ -50,6 +49,11 @@ Public Class Form1
         If My.Computer.FileSystem.FileExists("factorial_experiment.txt") = False Then
             Create_File("factorial_experiment.txt")
             My.Computer.FileSystem.WriteAllText("factorial_experiment.txt", "title" + vbLf + "factor1: level1, level2, level3" + vbLf + "factor2: option1, option2", False)
+        End If
+
+        ' create factorial journal default if not present
+        If My.Computer.FileSystem.FileExists("factorial_journal.txt") = False Then
+            Create_File("factorial_journal.txt")
         End If
 
         ' create log Journal if not present
@@ -90,6 +94,35 @@ Public Class Form1
         Dim formPosition As Array
         formSize = sizeArray(0).Split(" ", StringSplitOptions.TrimEntries)
         formPosition = sizeArray(1).Split(" ", StringSplitOptions.TrimEntries)
+
+        'Determine if window is off screen
+        Dim screenHeight As Integer = My.Computer.Screen.Bounds.Height
+        Dim screenWidth As Integer = My.Computer.Screen.Bounds.Width
+        Dim compHeight As Integer = (screenHeight / 2) - (196 / 2)
+        Dim compWidth As Integer = (screenWidth / 2) - (532 / 2)
+
+        Dim topLeft As Integer = Int(formPosition(1))
+        Dim topRight As Integer = Int(formPosition(1)) + Int(formSize(0))
+        Dim botLeft As Integer = Int(formPosition(0)) + Int(formSize(1))
+
+        'top left corner
+        If topLeft < 5 Then
+            formPosition(1) = (screenWidth * 0.05)
+        End If
+
+        If Int(formPosition(0)) < 0 Then
+            formPosition(0) = (screenHeight * 0.05)
+        End If
+
+        'top right corner
+        If topRight > screenWidth Then
+            formPosition(1) = Str(screenWidth - formSize(0) - (screenWidth * 0.05))
+        End If
+
+        'bottom of window
+        If botLeft > screenHeight Then
+            formPosition(0) = Str(screenHeight - formSize(1) - (screenWidth * 0.05))
+        End If
 
         Me.Width = Int(formSize(0))
         Me.Height = Int(formSize(1))
@@ -138,12 +171,15 @@ Public Class Form1
         textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
         textString = textString.Replace(" ", "_")
 
-        TakeScreenShot().Save("images/" & fileNameData & "_" & textString & ".bmp")
+        'Dim bmpFile As Bitmap = TakeScreenShot()
 
-    End Sub
+        bmpJournal = ""
+        bmpFile = TakeScreenShot()
+        bmpFileName = fileNameData & "_" & textString & ".bmp"
 
-    Private Sub lblClock_Click(sender As Object, e As EventArgs) Handles lblClock.Click
-        Process.Start("explorer.exe", ".")
+        FormScreenshotCheck.Show()
+        'bmpFile.Save("images/" & fileNameData & "_" & textString & ".bmp")
+
     End Sub
 
     Private Sub ButtonPopup_Click(sender As Object, e As EventArgs) Handles ButtonPopup.Click
@@ -152,6 +188,9 @@ Public Class Form1
         Dim screenHeight As Integer
         screenWidth = My.Computer.Screen.Bounds.Width
         screenHeight = My.Computer.Screen.Bounds.Height
+
+        Dim formWidth As Integer
+        formWidth = Form2.Width
 
         Dim formLeft As Integer
         Dim formTop As Integer
@@ -164,10 +203,16 @@ Public Class Form1
             popupHeight = -1 * Me.Height
         End If
 
+        Dim popupLeft As Integer
+        popupLeft = Me.Left
+        If formWidth > (screenWidth - formLeft) Then
+            popupLeft = screenWidth - formWidth - (0.01 * screenWidth)
+        End If
+
         Form2.StartPosition = FormStartPosition.Manual
 
         AddHandler Form2.Load, Sub()
-                                   Form2.Location = New Point(Me.Left,
+                                   Form2.Location = New Point(popupLeft,
                                                       Me.Top - popupHeight)
                                End Sub
 
@@ -182,6 +227,9 @@ Public Class Form1
         screenWidth = My.Computer.Screen.Bounds.Width
         screenHeight = My.Computer.Screen.Bounds.Height
 
+        Dim formWidth As Integer
+        formWidth = FormJournal.Width
+
         Dim formLeft As Integer
         Dim formTop As Integer
         Dim popupHeight As Integer
@@ -193,10 +241,16 @@ Public Class Form1
             popupHeight = -1 * Me.Height
         End If
 
+        Dim popupLeft As Integer
+        popupLeft = Me.Left
+        If formWidth > (screenWidth - formLeft) Then
+            popupLeft = screenWidth - formWidth - (0.01 * screenWidth)
+        End If
+
         FormJournal.StartPosition = FormStartPosition.Manual
 
         AddHandler FormJournal.Load, Sub()
-                                         FormJournal.Location = New Point(Me.Left,
+                                         FormJournal.Location = New Point(popupLeft,
                                                       Me.Top - popupHeight)
                                      End Sub
 
@@ -213,7 +267,14 @@ Public Class Form1
         End If
 
         Me.Opacity = OpacityVal
+        Form2.Opacity = OpacityVal
         FormJournal.Opacity = OpacityVal
+
+    End Sub
+
+    Private Sub lblClock_Click(sender As Object, e As EventArgs) Handles lblClock.Click
+
+        Process.Start("explorer.exe", "images")
 
     End Sub
 

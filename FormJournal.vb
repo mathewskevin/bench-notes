@@ -1,4 +1,7 @@
 ﻿Public Class FormJournal
+
+    Public fileName As String
+    Public fileText As String 'richtextbox data
     Private Function TakeScreenShot() As Bitmap
 
         Dim screenSize As Size = New Size(My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
@@ -23,21 +26,29 @@
         textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
         textString = textString.Replace(" ", "_")
 
-        Dim fileName As String 'file name
-        Dim fileText As String 'richtextbox data
-        fileName = fileNameData & "_" & textString & "_record.bmp"
+        fileName = "record_" & fileNameData & "_" & textString & ".bmp"
 
         fileText = Trim(JournalRichTextBox.Text.Replace(vbLf, " "))
         fileText = vbLf + fileName + " - " + fileText + vbLf
 
-        My.Computer.FileSystem.WriteAllText("log_journal.txt", fileText, True)
+        Form1.bmpFile = TakeScreenShot()
+        Form1.bmpFileName = fileName
+        Form1.bmpJournal = fileText
 
-        TakeScreenShot().Save("extra_images/" & fileName)
+        FormScreenshotCheck.Show()
+        'My.Computer.FileSystem.WriteAllText("log_journal.txt", fileText, True)
+
+        'TakeScreenShot().Save(fileName)
 
     End Sub
 
     Private Sub FormJournal_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.TopMost = True
+        Me.Opacity = Form1.OpacityVal
+
+        Dim fileReader As String
+        fileReader = My.Computer.FileSystem.ReadAllText("factorial_journal.txt")
+        JournalRichTextBox.Text = fileReader
 
         'Me.StartPosition = FormStartPosition.Manual
         'Me.Location = New Point(Form1.Current)
