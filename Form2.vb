@@ -44,8 +44,8 @@ Public Class Form2
         Dim addNum As Boolean
         Dim addCount As Integer = 0
         Dim curVal As Integer
-        For i = 0 To 500
-            charArray = Trim(Trim(Str(i)).PadLeft(3).Replace(" ", "0")).ToCharArray
+        For i = 0 To 9 ^ (UBound(countArraySize) + 1)
+            charArray = Trim(Trim(Str(i)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
 
             addNum = True
             For j = 0 To UBound(countArraySize)
@@ -199,6 +199,7 @@ Public Class Form2
         'update cycle num
         'NumericUpDownFactorialNum.Value = Int(factorialTitles.IndexOf(currentString) + 1)
         LabelFactorialNum.Text = Str(factorialTitles.IndexOf(currentString) + 1) + " of " + Trim(Str(factorialTitles.Count))
+        LabelFactorialNum.TextAlign = ContentAlignment.MiddleRight
 
     End Sub
 

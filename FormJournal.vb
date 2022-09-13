@@ -30,11 +30,10 @@
 
         fileText = Trim(JournalRichTextBox.Text.Replace(vbLf, " "))
         fileText = vbLf + fileName + " - " + fileText + vbLf
-
-        Form1.bmpFile = TakeScreenShot()
         Form1.bmpFileName = fileName
         Form1.bmpJournal = fileText
 
+        Form1.bmpFile = TakeScreenShot()
         FormScreenshotCheck.Show()
         'My.Computer.FileSystem.WriteAllText("log_journal.txt", fileText, True)
 
@@ -53,6 +52,28 @@
         'Me.StartPosition = FormStartPosition.Manual
         'Me.Location = New Point(Form1.Current)
         'Me.Location = New Point(Form1.StartPosition, 0)
+
+    End Sub
+
+    Private Sub ButtonRecordOnly_Click(sender As Object, e As EventArgs) Handles ButtonRecordOnly.Click
+
+        Dim fileNameData As String
+
+        fileNameData = DateTime.Now.ToString("yyyyMMddHHmmss")
+        fileNameData = fileNameData.Insert(8, "_")
+
+        fileName = "record_" & fileNameData & "_None"
+
+        fileText = Trim(JournalRichTextBox.Text.Replace(vbLf, " "))
+
+        If fileText <> "" Then
+            fileText = vbLf + fileName + " - " + fileText + vbLf
+            Form1.bmpFileName = fileName
+            Form1.bmpJournal = fileText
+
+            My.Computer.FileSystem.WriteAllText("log_journal.txt", Form1.bmpJournal, True)
+            MsgBox("Saved " & fileName)
+        End If
 
     End Sub
 
