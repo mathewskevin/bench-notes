@@ -3,7 +3,7 @@
 Public Class Form2
 
     'Dim factorialTitles(UBound(factorialCombos) - 1) As ArrayList
-    Dim factorialTitles As New List(Of String)() '(UBound(factorialCombos) - 1)
+    Public factorialTitles As New List(Of String)() '(UBound(factorialCombos) - 1)
     'Dim factorialTitles As ArrayList
 
     Private Function default_title(factorTextArray As Array) As String
@@ -20,6 +20,7 @@ Public Class Form2
         Return defaultTitle
 
     End Function
+
     Private Function factorial_combos(factorTextArray As Array)
 
         'Dim currentString As String
@@ -28,63 +29,137 @@ Public Class Form2
         Dim countArray(UBound(factorTextArray) - 1) As Integer
         Dim countArraySize(UBound(factorTextArray) - 1) As Integer
         Dim midInteger As Integer
+        Dim midArray As Array
         Dim countArrayTotal As Integer = 1
         For i = 0 To UBound(countArray)
             countArray(i) = 0
-            midInteger = UBound(factorTextArray(i + 1).Split(" ", StringSplitOptions.TrimEntries))
+            'midArray = factorTextArray(i + 1).Split(" ", StringSplitOptions.TrimEntries)
+            'midInteger = UBound(factorTextArray(i + 1).Split(" ", StringSplitOptions.TrimEntries))
+            midArray = factorTextArray(i + 1).Split(":", StringSplitOptions.TrimEntries)
+            midInteger = UBound(midArray(1).Split(", ", StringSplitOptions.TrimEntries)) + 1
+
             countArraySize(i) = midInteger - 1
-            countArrayTotal = countArrayTotal * midInteger
-        Next
 
-        'Dim factorialCombos(countArrayTotal) As Array
-        Dim factorialCombos(countArrayTotal - 1) As Array
-
-        'Dim titleArray As Array
-        Dim charArray As Array
-        Dim addNum As Boolean
-        Dim addCount As Integer = 0
-        Dim curVal As Integer
-        For i = 0 To 9 ^ (UBound(countArraySize) + 1)
-            charArray = Trim(Trim(Str(i)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
-
-            addNum = True
-            For j = 0 To UBound(countArraySize)
-                curVal = Val(charArray(j))
-                If curVal > countArraySize(j) Then
-                    addNum = False
-                End If
-            Next
-
-            If addNum = True Then
-                factorialCombos(addCount) = charArray
-                addCount = addCount + 1
+            If midInteger < 2 Then
+                countArrayTotal = countArrayTotal + 1
+            Else
+                countArrayTotal = countArrayTotal * midInteger
             End If
 
         Next
 
+        Dim finalString As String
+        Dim midString As String
+        finalString = String.Join(", ", countArraySize)
+        midString = String.Join(", ", countArray)
+
+        Dim addCount As Integer = 0
+        Dim midCount As Integer
+        Dim midSize As Integer
+        Dim curIndex As Integer = UBound(countArray)
+
+        'Dim factorialCombos(countArrayTotal) As Array
+        Dim factorialCombos As New List(Of String)()
+        Dim charArray As Array
+
+        'charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
+        midString = String.Join(", ", countArray)
+        factorialCombos.Add(midString)
+        addCount = addCount + 1
+
+        While midString <> finalString
+
+            midCount = countArray(curIndex)
+            midSize = countArraySize(curIndex)
+
+            If midCount < midSize Then
+                countArray(curIndex) = countArray(curIndex) + 1
+                If curIndex <> UBound(countArray) Then
+                    curIndex = curIndex + 1
+                End If
+
+                charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
+                midString = String.Join(", ", countArray)
+                factorialCombos.Add(midString)
+                addCount = addCount + 1
+
+            Else
+
+                If curIndex <> 0 Then ' if not MSB
+                    countArray(curIndex) = 0 ' reset current value
+                    curIndex = curIndex - 1 ' move forward one digit
+                Else
+                    curIndex = UBound(countArray)
+                End If
+
+            End If
+
+        End While
+
         Return factorialCombos
+
+    End Function
+
+    Private Function factorial_titles(textArray As Array)
+
+        Dim factorArray(UBound(textArray) - 1) As Array
+        Dim midArray As Array
+        For i = 1 To UBound(textArray)
+            midArray = textArray(i).Split(":", StringSplitOptions.TrimEntries)
+            'FactorListBox.Items.Add(midArray(0))
+            factorArray(i - 1) = midArray(1).Split(",", StringSplitOptions.TrimEntries)
+        Next
+
+        'check that 
+
+        Dim factorialCombos As Array
+        factorialCombos = factorial_combos(textArray).ToArray()
+
+        Dim returnFactorialTitles As New List(Of String)()
+
+        'Dim midArray As Array
+        Dim midTitle As String
+        Dim midVal As Double
+        Dim midString As String
+        Dim numFactors As Integer = UBound(factorialCombos)
+        Dim strFactors As String = Trim(Str(numFactors + 1))
+        For i = 0 To numFactors
+            midTitle = textArray(0)
+            midString = factorialCombos(i)
+            midArray = midString.Split(", ", StringSplitOptions.TrimEntries)
+            For j = 0 To UBound(midArray)
+                midVal = Val(midArray(j))
+                midTitle = midTitle + " " + factorArray(j)(midVal)
+            Next
+            'factorialTitles.SetValue(midTitle, i)
+            'midTitle = Trim(Str(i + 1)).PadLeft(strFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strFactors + " " + midTitle
+            returnFactorialTitles.Add(midTitle)
+        Next
+
+        Return returnFactorialTitles
 
     End Function
 
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Me.TopMost = True
-        Me.Opacity = Form1.OpacityVal
+        'Me.Opacity = Form1.OpacityVal
 
         Dim fileReader As String
         Dim textArray As Array
         fileReader = My.Computer.FileSystem.ReadAllText("factorial_experiment.txt")
         textArray = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
 
+        factorialTitles = factorial_titles(textArray)
+        Form1.factorialTitles = factorialTitles
+
         Dim factorArray(UBound(textArray) - 1) As Array
         Dim midArray As Array
         For i = 1 To UBound(textArray)
             midArray = textArray(i).Split(":", StringSplitOptions.TrimEntries)
             FactorListBox.Items.Add(midArray(0))
-            factorArray(i - 1) = midArray(1).Split(",", StringSplitOptions.TrimEntries)
+            'factorArray(i - 1) = midArray(1).Split(",", StringSplitOptions.TrimEntries)
         Next
-
-        TitleTextBox.Text = Form1.RichTextBox1.Text.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
 
         'add channels to listbox
         Dim channelString As String
@@ -97,22 +172,12 @@ Public Class Form2
             factorComboBox.Items.Add(channelArray(i).Split(" ", StringSplitOptions.TrimEntries)(0))
         Next
 
-        'check that 
+        'check that title is in factorial titles
+        TitleTextBox.Text = Form1.RichTextBox1.Text.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
 
-        Dim factorialCombos As Array
-        factorialCombos = factorial_combos(textArray)
-
-        'Dim midArray As Array
-        Dim midTitle As String
-        For i = 0 To UBound(factorialCombos)
-            midTitle = textArray(0)
-            midArray = factorialCombos(i)
-            For j = 0 To UBound(midArray)
-                midTitle = midTitle + " " + factorArray(j)(Val(midArray(j)))
-            Next
-            'factorialTitles.SetValue(midTitle, i)
-            factorialTitles.Add(midTitle)
-        Next
+        If factorialTitles.IndexOf(TitleTextBox.Text) = -1 Then
+            TitleTextBox.Text = factorialTitles(0)
+        End If
 
         factorComboBox.SelectedIndex = 0
         FactorListBox.SelectedIndex = 0
@@ -246,6 +311,48 @@ Public Class Form2
         Next
 
         Form1.RichTextBox2.Text = channelText
+
+    End Sub
+
+    Private Sub ButtonNext_Click(sender As Object, e As EventArgs) Handles ButtonNext.Click
+        Dim currentInteger As Integer
+        currentInteger = factorialTitles.IndexOf(TitleTextBox.Text)
+        currentInteger = currentInteger + 1
+
+        If currentInteger > factorialTitles.Count - 1 Then
+            currentInteger = 0
+        End If
+
+        Dim currentString As String
+        currentString = factorialTitles(currentInteger)
+
+        TitleTextBox.Text = currentString
+        LabelFactorialNum.Text = Str(factorialTitles.IndexOf(currentString) + 1) + " of " + Trim(Str(factorialTitles.Count))
+        LabelFactorialNum.TextAlign = ContentAlignment.MiddleRight
+
+        'factorComboBox.SelectedIndex = factorComboBox.SelectedIndex
+        'FactorListBox.SelectedIndex = FactorListBox.SelectedIndex
+
+    End Sub
+
+    Private Sub ButtonPrevious_Click(sender As Object, e As EventArgs) Handles ButtonPrevious.Click
+        Dim currentInteger As Integer
+        currentInteger = factorialTitles.IndexOf(TitleTextBox.Text)
+        currentInteger = currentInteger - 1
+
+        If currentInteger < 0 Then
+            currentInteger = factorialTitles.Count - 1
+        End If
+
+        Dim currentString As String
+        currentString = factorialTitles(currentInteger)
+
+        TitleTextBox.Text = currentString
+        LabelFactorialNum.Text = Str(factorialTitles.IndexOf(currentString) + 1) + " of " + Trim(Str(factorialTitles.Count))
+        LabelFactorialNum.TextAlign = ContentAlignment.MiddleRight
+
+        'factorComboBox.SelectedIndex = factorComboBox.SelectedIndex
+        'FactorListBox.SelectedIndex = FactorListBox.SelectedIndex
 
     End Sub
 

@@ -24,8 +24,17 @@
 
         textString = Form1.RichTextBox1.Text
         textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
-        textString = textString.Replace(" ", "_")
 
+        'add experiment prefix
+        Dim numFactors As Integer = UBound(Form1.factorialTitles.ToArray)
+        Dim strNumFactors As String = Trim(Str(numFactors + 1))
+        Dim titleIndex As Integer = Form1.factorialTitles.IndexOf(textString)
+
+        If titleIndex > -1 Then
+            textString = Trim(Str(titleIndex + 1)).PadLeft(strNumFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strNumFactors + " " + textString
+        End If
+
+        textString = textString.Replace(" ", "_")
         fileName = "record_" & fileNameData & "_" & textString & ".bmp"
 
         fileText = Trim(JournalRichTextBox.Text.Replace(vbLf, " "))

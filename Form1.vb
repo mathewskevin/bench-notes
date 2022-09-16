@@ -14,6 +14,126 @@ Public Class Form1
     Public bmpFile As Bitmap
     Public bmpJournal As String = ""
 
+    Public factorialTitles As New List(Of String)()
+    Private Function factorial_combos(factorTextArray As Array)
+
+        'Dim currentString As String
+        Dim defaultTitle As String = factorTextArray(0)
+
+        Dim countArray(UBound(factorTextArray) - 1) As Integer
+        Dim countArraySize(UBound(factorTextArray) - 1) As Integer
+        Dim midInteger As Integer
+        Dim midArray As Array
+        Dim countArrayTotal As Integer = 1
+        For i = 0 To UBound(countArray)
+            countArray(i) = 0
+            'midArray = factorTextArray(i + 1).Split(" ", StringSplitOptions.TrimEntries)
+            'midInteger = UBound(factorTextArray(i + 1).Split(" ", StringSplitOptions.TrimEntries))
+            midArray = factorTextArray(i + 1).Split(":", StringSplitOptions.TrimEntries)
+            midInteger = UBound(midArray(1).Split(", ", StringSplitOptions.TrimEntries)) + 1
+
+            countArraySize(i) = midInteger - 1
+
+            If midInteger < 2 Then
+                countArrayTotal = countArrayTotal + 1
+            Else
+                countArrayTotal = countArrayTotal * midInteger
+            End If
+
+        Next
+
+        Dim finalString As String
+        Dim midString As String
+        finalString = String.Join(", ", countArraySize)
+        midString = String.Join(", ", countArray)
+
+        Dim addCount As Integer = 0
+        Dim midCount As Integer
+        Dim midSize As Integer
+        Dim curIndex As Integer = UBound(countArray)
+
+        'Dim factorialCombos(countArrayTotal) As Array
+        Dim factorialCombos As New List(Of String)()
+        Dim charArray As Array
+
+        'charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
+        midString = String.Join(", ", countArray)
+        factorialCombos.Add(midString)
+        addCount = addCount + 1
+
+        While midString <> finalString
+
+            midCount = countArray(curIndex)
+            midSize = countArraySize(curIndex)
+
+            If midCount < midSize Then
+                countArray(curIndex) = countArray(curIndex) + 1
+                If curIndex <> UBound(countArray) Then
+                    curIndex = curIndex + 1
+                End If
+
+                charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
+                midString = String.Join(", ", countArray)
+                factorialCombos.Add(midString)
+                addCount = addCount + 1
+
+            Else
+
+                If curIndex <> 0 Then ' if not MSB
+                    countArray(curIndex) = 0 ' reset current value
+                    curIndex = curIndex - 1 ' move forward one digit
+                Else
+                    curIndex = UBound(countArray)
+                End If
+
+            End If
+
+        End While
+
+        Return factorialCombos
+
+    End Function
+
+    Private Function factorial_titles(textArray As Array)
+
+        Dim factorArray(UBound(textArray) - 1) As Array
+        Dim midArray As Array
+        For i = 1 To UBound(textArray)
+            midArray = textArray(i).Split(":", StringSplitOptions.TrimEntries)
+            'FactorListBox.Items.Add(midArray(0))
+            factorArray(i - 1) = midArray(1).Split(",", StringSplitOptions.TrimEntries)
+        Next
+
+        'check that 
+
+        Dim factorialCombos As Array
+        factorialCombos = factorial_combos(textArray).ToArray()
+
+        Dim returnFactorialTitles As New List(Of String)()
+
+        'Dim midArray As Array
+        Dim midTitle As String
+        Dim midVal As Double
+        Dim midString As String
+        Dim numFactors As Integer = UBound(factorialCombos)
+        Dim strFactors As String = Trim(Str(numFactors + 1))
+        For i = 0 To numFactors
+            midTitle = textArray(0)
+            midString = factorialCombos(i)
+            midArray = midString.Split(", ", StringSplitOptions.TrimEntries)
+            For j = 0 To UBound(midArray)
+                midVal = Val(midArray(j))
+                midTitle = midTitle + " " + factorArray(j)(midVal)
+            Next
+            'factorialTitles.SetValue(midTitle, i)
+            'midTitle = Trim(Str(i + 1)).PadLeft(strFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strFactors + " " + midTitle
+            returnFactorialTitles.Add(midTitle)
+        Next
+
+        Return returnFactorialTitles
+
+    End Function
+
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         lblClock.Text = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")
     End Sub
@@ -89,6 +209,11 @@ Public Class Form1
         Dim sizeArray As Array
         fileReader = My.Computer.FileSystem.ReadAllText("log_settings.txt")
         sizeArray = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
+
+        Dim textArray As Array
+        fileReader = My.Computer.FileSystem.ReadAllText("factorial_experiment.txt")
+        textArray = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
+        factorialTitles = factorial_titles(textArray)
 
         Dim formSize As Array
         Dim formPosition As Array
@@ -169,6 +294,16 @@ Public Class Form1
 
         textString = RichTextBox1.Text
         textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
+
+        'add experiment prefix
+        Dim numFactors As Integer = UBound(factorialTitles.ToArray)
+        Dim strNumFactors As String = Trim(Str(numFactors + 1))
+        Dim titleIndex As Integer = factorialTitles.IndexOf(textString)
+
+        If titleIndex > -1 Then
+            textString = Trim(Str(titleIndex + 1)).PadLeft(strNumFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strNumFactors + " " + textString
+        End If
+
         textString = textString.Replace(" ", "_")
 
         'Dim bmpFile As Bitmap = TakeScreenShot()
@@ -267,7 +402,7 @@ Public Class Form1
         End If
 
         Me.Opacity = OpacityVal
-        Form2.Opacity = OpacityVal
+        'Form2.Opacity = OpacityVal
         FormJournal.Opacity = OpacityVal
 
     End Sub

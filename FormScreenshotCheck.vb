@@ -3,6 +3,8 @@
 Public Class FormScreenshotCheck
     Private Sub FormScreenshotCheck_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
+        Me.TopMost = True
+
         Dim text1 As String = Form1.RichTextBox1.Text
         Dim text2 As String = Form1.RichTextBox2.Text
         Dim text3 As String = FormJournal.JournalRichTextBox.Text
@@ -17,17 +19,8 @@ Public Class FormScreenshotCheck
         fileReader = My.Computer.FileSystem.ReadAllText("factorial_experiment.txt")
         textArraySettings = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
 
-        Dim string1 As String = textArray(0)
-        string1 = Trim(string1.Replace(textArraySettings(0), ""))
-        textArraySettings = string1.Split(" ")
-
-        string1 = textArray(0)
-        For i = 0 To UBound(textArraySettings)
-            string1 = Trim(string1.Replace(textArraySettings(i), ""))
-        Next
-
         For i = 0 To UBound(channelArray)
-            CheckedListBoxScreenshot.Items.Add(channelArray(i))
+            CheckedListBoxScreenshot.Items.Add("check setup/label/bench_notes -> " + channelArray(i))
         Next
 
         If textJournal(0) <> "" Then
@@ -36,11 +29,37 @@ Public Class FormScreenshotCheck
             Next
         End If
 
-        CheckedListBoxScreenshot.Items.Add(string1)
+        Dim string1 As String = textArray(0)
+        Dim titleIndex As Integer = Form1.factorialTitles.IndexOf(string1)
 
-        For i = 0 To UBound(textArraySettings)
-            CheckedListBoxScreenshot.Items.Add(textArraySettings(i))
-        Next
+        If titleIndex > -1 Then
+
+            string1 = Trim(string1.Replace(textArraySettings(0), ""))
+
+            textArraySettings = string1.Split(" ")
+
+            string1 = textArray(0)
+            For i = 0 To UBound(textArraySettings)
+                string1 = Trim(string1.Replace(textArraySettings(i), ""))
+            Next
+
+            'add experiment prefix
+            Dim elementPrefix As String
+            Dim numFactors As Integer = UBound(Form1.factorialTitles.ToArray)
+            Dim strNumFactors As String = Trim(Str(numFactors + 1))
+            elementPrefix = Trim(Str(titleIndex + 1)).PadLeft(strNumFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strNumFactors
+
+            CheckedListBoxScreenshot.Items.Add("Experiment: " + elementPrefix + " - " + string1)
+
+            For i = 0 To UBound(textArraySettings)
+                CheckedListBoxScreenshot.Items.Add(textArraySettings(i))
+            Next
+
+        Else
+
+            CheckedListBoxScreenshot.Items.Add(string1)
+
+        End If
 
         For i = 1 To UBound(textArray)
             CheckedListBoxScreenshot.Items.Add(textArray(i))
