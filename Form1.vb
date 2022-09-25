@@ -2,7 +2,9 @@
 Imports System.Buffers
 Imports System.IO
 Imports System.Net.Mime.MediaTypeNames
+Imports System.Reflection.Metadata.Ecma335
 Imports System.Security.Cryptography.X509Certificates
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar
 
 Public Class Form1
 
@@ -13,15 +15,57 @@ Public Class Form1
     Public bmpFileName As String
     Public bmpFile As Bitmap
     Public bmpJournal As String = ""
+    Public saveType As String = ""
+    Public screenshotPrefix As String = ""
+
+    Public strlogTitle As String = ""
+    Public strLogData As String = ""
 
     Public factorialTitles As New List(Of String)()
-    Private Function factorial_combos(factorTextArray As Array)
+
+    Public Function name_screenshot() As String
+
+        Dim fileNameData As String
+
+        fileNameData = DateTime.Now.ToString("yyyyMMddHHmmss")
+        fileNameData = fileNameData.Insert(8, "_")
+
+        'get first line of richtextbox, use as title
+        Dim textString As String
+
+        textString = RichTextBox1.Text
+        textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
+
+        'add experiment prefix
+        Dim numFactors As Integer = UBound(factorialTitles.ToArray)
+        Dim strNumFactors As String = Trim(Str(numFactors + 1))
+        Dim titleIndex As Integer = factorialTitles.IndexOf(textString)
+
+        Dim titleIndexString As String = Trim(Str(titleIndex + 1)).PadLeft(strNumFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strNumFactors
+        'Dim factorialInfo As FileInfo
+        'Dim lastWriteTime As String
+        'factorialInfo = My.Computer.FileSystem.GetFileInfo("factorial_experiment.txt")
+        'lastWriteTime = factorialInfo.LastWriteTime.ToString("MMddHHmmss")
+        If titleIndex > -1 Then
+            textString = "(" + titleIndexString + ") " + textString
+        End If
+
+        textString = textString.Replace(", ", "_")
+
+        Dim outFileName As String
+        outFileName = fileNameData & "_" & textString & ".bmp"
+
+        Return outFileName
+
+    End Function
+
+    Public Function factorial_combos(factorTextArray As Array)
 
         'Dim currentString As String
         Dim defaultTitle As String = factorTextArray(0)
 
-        Dim countArray(UBound(factorTextArray) - 1) As Integer
-        Dim countArraySize(UBound(factorTextArray) - 1) As Integer
+        Dim countArray(UBound(factorTextArray) - 1) As Integer 'array to hold current number
+        Dim countArraySize(UBound(factorTextArray) - 1) As Integer 'number of characters in each digit
         Dim midInteger As Integer
         Dim midArray As Array
         Dim countArrayTotal As Integer = 1
@@ -64,37 +108,35 @@ Public Class Form1
         While midString <> finalString
 
             midCount = countArray(curIndex)
-            midSize = countArraySize(curIndex)
+            midSize = countArraySize(curIndex) ' number of characters in current integer
 
-            If midCount < midSize Then
-                countArray(curIndex) = countArray(curIndex) + 1
-                If curIndex <> UBound(countArray) Then
-                    curIndex = curIndex + 1
-                End If
-
-                charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
-                midString = String.Join(", ", countArray)
-                factorialCombos.Add(midString)
-                addCount = addCount + 1
-
-            Else
-
-                If curIndex <> 0 Then ' if not MSB
-                    countArray(curIndex) = 0 ' reset current value
-                    curIndex = curIndex - 1 ' move forward one digit
+            'go back to beginning and find smallest increase
+            For i = 0 To UBound(countArray)
+                curIndex = UBound(countArray) - i
+                If countArray(curIndex) < countArraySize(curIndex) Then
+                    Exit For
                 Else
-                    curIndex = UBound(countArray)
+                    countArray(curIndex) = 0
                 End If
+            Next
 
-            End If
+            'increment number
+            countArray(curIndex) = countArray(curIndex) + 1
+
+            'convert to string and add to array
+            charArray = Trim(Trim(Str(addCount)).PadLeft(UBound(countArraySize) + 1).Replace(" ", "0")).ToCharArray
+            midString = String.Join(", ", countArray)
+            factorialCombos.Add(midString)
 
         End While
+
+        ' assert length countArrayTotal == UBound(factorialCombos)
 
         Return factorialCombos
 
     End Function
 
-    Private Function factorial_titles(textArray As Array)
+    Public Function factorial_titles(textArray As Array)
 
         Dim factorArray(UBound(textArray) - 1) As Array
         Dim midArray As Array
@@ -117,13 +159,20 @@ Public Class Form1
         Dim midString As String
         Dim numFactors As Integer = UBound(factorialCombos)
         Dim strFactors As String = Trim(Str(numFactors + 1))
+
+        'Dim titleIndexString As String
+
         For i = 0 To numFactors
             midTitle = textArray(0)
+
+            'titleIndexString = Trim(Str(i + 1)).PadLeft(strFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strFactors
+            'midTitle = midTitle + " (" + titleIndexString + ")"
+
             midString = factorialCombos(i)
             midArray = midString.Split(", ", StringSplitOptions.TrimEntries)
             For j = 0 To UBound(midArray)
                 midVal = Val(midArray(j))
-                midTitle = midTitle + " " + factorArray(j)(midVal)
+                midTitle = midTitle + ", " + factorArray(j)(midVal)
             Next
             'factorialTitles.SetValue(midTitle, i)
             'midTitle = Trim(Str(i + 1)).PadLeft(strFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strFactors + " " + midTitle
@@ -153,16 +202,20 @@ Public Class Form1
             My.Computer.FileSystem.CreateDirectory("images")
         End If
 
+        If My.Computer.FileSystem.DirectoryExists("logs") = False Then
+            My.Computer.FileSystem.CreateDirectory("logs")
+        End If
+
         ' create log channels if not present
-        If My.Computer.FileSystem.FileExists("log_channels.txt") = False Then
-            Create_File("log_channels.txt")
-            My.Computer.FileSystem.WriteAllText("log_channels.txt", "C1 - " + vbLf + "C2 - ", False)
+        If My.Computer.FileSystem.FileExists("logs/log_channels.txt") = False Then
+            Create_File("logs/log_channels.txt")
+            My.Computer.FileSystem.WriteAllText("logs/log_channels.txt", "C1 - " + vbLf + "C2 - ", False)
         End If
 
         ' create log notes if not present
-        If My.Computer.FileSystem.FileExists("log_notes.txt") = False Then
-            Create_File("log_notes.txt")
-            My.Computer.FileSystem.WriteAllText("log_notes.txt", "write notes here", False)
+        If My.Computer.FileSystem.FileExists("logs/log_notes.txt") = False Then
+            Create_File("logs/log_notes.txt")
+            My.Computer.FileSystem.WriteAllText("logs/log_notes.txt", "write notes here", False)
         End If
 
         ' create log factors if not present
@@ -177,16 +230,27 @@ Public Class Form1
         End If
 
         ' create log Journal if not present
-        If My.Computer.FileSystem.FileExists("log_journal.txt") = False Then
-            Create_File("log_journal.txt")
+        If My.Computer.FileSystem.FileExists("logs/log_journal.txt") = False Then
+            Create_File("logs/log_journal.txt")
+        End If
+
+        ' create log data if not present
+        If My.Computer.FileSystem.FileExists("logs/log_data.txt") = False Then
+            Create_File("logs/log_data.txt")
+        End If
+
+        ' create log data if not present
+        If My.Computer.FileSystem.FileExists("factorial_data.txt") = False Then
+            Create_File("factorial_data.txt")
+            My.Computer.FileSystem.WriteAllText("factorial_data.txt", "column" + vbLf + "level1, level2, level3", False)
         End If
 
         ' create load data if not present
-        If My.Computer.FileSystem.FileExists("log_settings.txt") = False Then
-            Create_File("log_settings.txt")
+        If My.Computer.FileSystem.FileExists("logs/log_settings.txt") = False Then
+            Create_File("logs/log_settings.txt")
             Dim compHeight As Integer = (My.Computer.Screen.Bounds.Height / 2) - (196 / 2)
             Dim compWidth As Integer = (My.Computer.Screen.Bounds.Width / 2) - (532 / 2)
-            My.Computer.FileSystem.WriteAllText("log_settings.txt", "532 196" + vbLf + Trim(Str(compHeight)) + " " + Trim(Str(compWidth)), False)
+            My.Computer.FileSystem.WriteAllText("logs/log_settings.txt", "532 196" + vbLf + Trim(Str(compHeight)) + " " + Trim(Str(compWidth)), False)
         End If
 
         Return "None"
@@ -200,14 +264,14 @@ Public Class Form1
         Me.TopMost = True
 
         Dim fileReader As String
-        fileReader = My.Computer.FileSystem.ReadAllText("log_notes.txt")
+        fileReader = My.Computer.FileSystem.ReadAllText("logs/log_notes.txt")
         RichTextBox1.Text = fileReader
 
-        fileReader = My.Computer.FileSystem.ReadAllText("log_channels.txt")
+        fileReader = My.Computer.FileSystem.ReadAllText("logs/log_channels.txt")
         RichTextBox2.Text = fileReader
 
         Dim sizeArray As Array
-        fileReader = My.Computer.FileSystem.ReadAllText("log_settings.txt")
+        fileReader = My.Computer.FileSystem.ReadAllText("logs/log_settings.txt")
         sizeArray = fileReader.Split({vbLf}, StringSplitOptions.TrimEntries)
 
         Dim textArray As Array
@@ -251,9 +315,14 @@ Public Class Form1
 
         Me.Width = Int(formSize(0))
         Me.Height = Int(formSize(1))
-
         Me.Top = formPosition(0)
         Me.Left = formPosition(1)
+
+        ButtonOpacity.FlatStyle = FlatStyle.Flat
+        ButtonOpacity.BackColor = Color.White
+        ButtonOpacity.FlatAppearance.BorderSize = 0
+        ButtonOpacity.FlatAppearance.MouseOverBackColor = Color.Transparent
+        ButtonOpacity.FlatAppearance.MouseDownBackColor = Color.Transparent
 
     End Sub
 
@@ -263,16 +332,16 @@ Public Class Form1
 
         Dim fileWriter As String
         fileWriter = RichTextBox1.Text
-        My.Computer.FileSystem.WriteAllText("log_notes.txt", fileWriter, False)
+        My.Computer.FileSystem.WriteAllText("logs/log_notes.txt", fileWriter, False)
         fileWriter = RichTextBox2.Text
-        My.Computer.FileSystem.WriteAllText("log_channels.txt", fileWriter, False)
+        My.Computer.FileSystem.WriteAllText("logs/log_channels.txt", fileWriter, False)
 
         fileWriter = Trim(Str(Me.Width)) + " " + Trim(Str(Me.Height)) + vbLf + Trim(Str(Me.Top)) + " " + Trim(Str(Me.Left))
-        My.Computer.FileSystem.WriteAllText("log_settings.txt", fileWriter, False)
+        My.Computer.FileSystem.WriteAllText("logs/log_settings.txt", fileWriter, False)
 
     End Sub
 
-    Private Function TakeScreenShot() As Bitmap
+    Public Function TakeScreenShot() As Bitmap
 
         Dim screenSize As Size = New Size(My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
         Dim screenGrab As New Bitmap(My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
@@ -284,126 +353,90 @@ Public Class Form1
 
     Private Sub ButtonScreenshot_Click(sender As Object, e As EventArgs) Handles btnScreenshot.Click
 
-        Dim fileNameData As String
-
-        fileNameData = DateTime.Now.ToString("yyyyMMddHHmmss")
-        fileNameData = fileNameData.Insert(8, "_")
-
-        'get first line of richtextbox, use as title
-        Dim textString As String
-
-        textString = RichTextBox1.Text
-        textString = textString.Split({vbLf}, StringSplitOptions.TrimEntries)(0)
-
-        'add experiment prefix
-        Dim numFactors As Integer = UBound(factorialTitles.ToArray)
-        Dim strNumFactors As String = Trim(Str(numFactors + 1))
-        Dim titleIndex As Integer = factorialTitles.IndexOf(textString)
-
-        If titleIndex > -1 Then
-            textString = Trim(Str(titleIndex + 1)).PadLeft(strNumFactors.ToCharArray.Count).Replace(" ", "0") + " of " + strNumFactors + " " + textString
-        End If
-
-        textString = textString.Replace(" ", "_")
-
         'Dim bmpFile As Bitmap = TakeScreenShot()
 
+        Me.screenshotPrefix = "experiment_"
         bmpJournal = ""
         bmpFile = TakeScreenShot()
-        bmpFileName = fileNameData & "_" & textString & ".bmp"
+        bmpFileName = name_screenshot()
 
         FormScreenshotCheck.Show()
         'bmpFile.Save("images/" & fileNameData & "_" & textString & ".bmp")
 
     End Sub
 
-    Private Sub ButtonPopup_Click(sender As Object, e As EventArgs) Handles ButtonPopup.Click
+    Public Function popup_position(curForm As Form)
 
         Dim screenWidth As Integer
         Dim screenHeight As Integer
         screenWidth = My.Computer.Screen.Bounds.Width
         screenHeight = My.Computer.Screen.Bounds.Height
 
-        Dim formWidth As Integer
-        formWidth = Form2.Width
-
+        Dim formRight As Integer
         Dim formLeft As Integer
         Dim formTop As Integer
-        Dim popupHeight As Integer
+        Dim formBottom As Integer
+        formRight = Me.Right
         formLeft = Me.Left
         formTop = Me.Top
-        popupHeight = Form2.Height
+        formBottom = Me.Bottom
 
-        If popupHeight > formTop Then
-            popupHeight = -1 * Me.Height
+        Dim popupWidth As Integer
+        Dim popupHeight As Integer
+        popupWidth = curForm.Width
+        popupHeight = curForm.Height
+
+        Dim popupTop As Integer
+        popupTop = formTop + Me.Height
+        'flip top position if form is at bottom of screen
+        If popupHeight > (screenHeight - formBottom) Then
+            popupTop = formTop - popupHeight
         End If
 
         Dim popupLeft As Integer
         popupLeft = Me.Left
-        If formWidth > (screenWidth - formLeft) Then
-            popupLeft = screenWidth - formWidth - (0.01 * screenWidth)
+        'flip left position if form is at screen edge
+        If popupWidth > (screenWidth - popupLeft) Then
+            popupLeft = Me.Left + (Me.Width - popupWidth)
         End If
 
-        Form2.StartPosition = FormStartPosition.Manual
+        curForm.StartPosition = FormStartPosition.Manual
 
-        AddHandler Form2.Load, Sub()
-                                   Form2.Location = New Point(popupLeft,
-                                                      Me.Top - popupHeight)
-                               End Sub
+        AddHandler curForm.Load, Sub()
+                                     curForm.Location = New Point(popupLeft, popupTop)
+                                 End Sub
 
-        Form2.Show()
+        curForm.Show()
+
+        Return "None"
+
+    End Function
+
+    Private Sub ButtonPopup_Click(sender As Object, e As EventArgs) Handles ButtonPopup.Click
+
+        popup_position(Form2)
 
     End Sub
 
     Private Sub ButtonJournal_Click(sender As Object, e As EventArgs) Handles ButtonJournal.Click
 
-        Dim screenWidth As Integer
-        Dim screenHeight As Integer
-        screenWidth = My.Computer.Screen.Bounds.Width
-        screenHeight = My.Computer.Screen.Bounds.Height
-
-        Dim formWidth As Integer
-        formWidth = FormJournal.Width
-
-        Dim formLeft As Integer
-        Dim formTop As Integer
-        Dim popupHeight As Integer
-        formLeft = Me.Left
-        formTop = Me.Top
-        popupHeight = FormJournal.Height
-
-        If popupHeight > formTop Then
-            popupHeight = -1 * Me.Height
-        End If
-
-        Dim popupLeft As Integer
-        popupLeft = Me.Left
-        If formWidth > (screenWidth - formLeft) Then
-            popupLeft = screenWidth - formWidth - (0.01 * screenWidth)
-        End If
-
-        FormJournal.StartPosition = FormStartPosition.Manual
-
-        AddHandler FormJournal.Load, Sub()
-                                         FormJournal.Location = New Point(popupLeft,
-                                                      Me.Top - popupHeight)
-                                     End Sub
-
-        FormJournal.Show()
+        FormJournal.Width = Me.Width
+        popup_position(FormJournal)
 
     End Sub
 
     Private Sub ButtonOpacity_Click(sender As Object, e As EventArgs) Handles ButtonOpacity.Click
 
-        If OpacityVal = 1.0 Then
-            OpacityVal = 0.75
+        If Me.OpacityVal = 1.0 Then
+            Me.OpacityVal = 0.75
         Else
-            OpacityVal = 1.0
+            Me.OpacityVal = 1.0
         End If
 
         Me.Opacity = OpacityVal
         'Form2.Opacity = OpacityVal
         FormJournal.Opacity = OpacityVal
+        FormDataEntry.Opacity = OpacityVal
 
     End Sub
 
@@ -411,6 +444,21 @@ Public Class Form1
 
         Process.Start("explorer.exe", "images")
 
+        'If OpacityVal = 1.0 Then
+        'OpacityVal = 0.75
+        'Else
+        'OpacityVal = 1.0
+        'End If
+
+        'Me.Opacity = OpacityVal
+        'Form2.Opacity = OpacityVal
+        'FormJournal.Opacity = OpacityVal
+
+    End Sub
+
+    Private Sub ButtonDataEntry_Click(sender As Object, e As EventArgs) Handles ButtonDataEntry.Click
+        'FormDataEntry.Width = Me.Width
+        popup_position(FormDataEntry)
     End Sub
 
 End Class
